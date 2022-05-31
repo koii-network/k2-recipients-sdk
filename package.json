@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build:dev": "tsc-watch --noClear -p ./tsconfig.json"
+    "build:dev": "tsc-watch --noClear -p ./tsconfig.json",
+    "run:dev":"node build/index.js"
   },
   "license": "MIT",
   "dependencies": {
