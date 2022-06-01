@@ -62,15 +62,30 @@ async function main(params: SignInterface) {
     result.find((e) => {
       e.path === "";
     })?.path || "";
-  const cid: string = result
-    .find((e) => e.path == "image.jpeg")
-    ?.cid?.toString();
+  const cid: string =
+    result.find((e) => e.path == "image.jpeg")?.cid?.toString() || "";
 
   result.filter;
-  const payload:PayloadInterface = {
+  const payload: PayloadInterface = {
     contentRegistryId: `IPFS:${basePath}:${cid}`,
-    k2PubKey: "4HV3retNdHCnNR4Q9KKdug2qQXTKvd8PJCehGJ6gTUKN",
+    k2PubKey: publicKey,
   };
+  const signature: Uint8Array = sign.detached(
+    encodeJSONToUint8Array(payload),
+    wallet.secretKey
+  );
+  const recipient = {
+    data: {
+      payload,
+      timestamp: new Date().valueOf(),
+    },
+    signature: bs58.encode(signature),
+  };
+}
+function encodeJSONToUint8Array(
+  data: Record<string, unknown> | PayloadInterface
+): Uint8Array {
+  return new TextEncoder().encode(JSON.stringify(data));
 }
 
 // console.log(cid);
@@ -88,7 +103,6 @@ main({
 });
 
 interface PayloadInterface {
-  contentRegistryId:string,
-  k2PubKey: string
+  contentRegistryId: string;
+  k2PubKey: string;
 }
-
