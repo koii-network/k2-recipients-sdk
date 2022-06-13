@@ -1,123 +1,76 @@
-import { create, IPFSHTTPClient, CID } from "ipfs-http-client";
-import { SignKeyPair, sign } from "tweetnacl";
-import fetch from "node-fetch";
-import bs58 from "bs58";
-import fs from "fs";
-import path from "path";
-import { inspect } from "util";
+import * as ipfs from './ipfs';
+import * as arweave from './arweave';
+import fs from 'fs';
+import path from 'path';
+import { inspect } from 'util';
+import fetch from 'node-fetch';
+import nacl from 'tweetnacl';
+const jsonfile = require('jsonfile');
+import dotenv from 'dotenv'
+dotenv.config()
+async function main() {
+    // test
+    const metadata = {
+        owner: 'J7Pp3r627N9XMG6GnX3TqqJRquzjCeB15vBf4SarC8RM',
+        title: 'Vin Avatar',
+        name: 'Vinciis',
+        description: 'Vin demo avatar for test',
+        ticker: 'KOINFT',
+        balances: {
+            J7Pp3r627N9XMG6GnX3TqqJRquzjCeB15vBf4SarC8RM: 1,
+        },
+        contentType: 'image/png',
+        createdAt: '1654017641',
+        tags: ['vinciis', ' blinds', ' arweave', ' koii'],
+        isNsfw: false,
+    };
+    //  IPFS recipient Signing
+    //-----------------------------
+    // let recipientsDataIPFS = await ipfs.registerRecipient({
+    //     privateKey: new Uint8Array([
+    //         16, 179, 201, 59, 157, 142, 252, 32, 11, 119, 232, 101, 245, 5, 225, 239,
+    //         198, 225, 229, 71, 137, 216, 16, 218, 189, 7, 85, 152, 61, 139, 4, 13, 254,
+    //         57, 244, 142, 109, 82, 53, 187, 235, 187, 57, 34, 227, 112, 112, 124, 134,
+    //         154, 131, 29, 35, 170, 42, 87, 50, 12, 252, 56, 98, 253, 36, 168,
+    //     ]),
+    //     image: fs.readFileSync(path.join(__dirname, "../image.jpeg")),
+    //     metadata: metadata
+    // })
+    // console.log(inspect(recipientsDataIPFS, { showHidden: false, depth: null, colors: true }));
+    // await sendRecipientsToNodes(recipientsDataIPFS)
 
-const client: IPFSHTTPClient = create();
-interface SignInterface {
-  privateKey: Uint8Array;
-  image: Buffer | Uint8Array;
-  metadata: MetaData;
-}
-interface IPFSResponseItem {
-  path: string;
-  cid: CID;
-  size: number;
-}
-interface MetaData {
-  [x: string | number | symbol]: unknown;
+    //  Arweave Ports Signing
+    //-----------------------------
+
+    // const { publicKey, secretKey } = nacl.sign.keyPair.fromSecretKey(
+    //     new Uint8Array(jsonfile.readFileSync(process.env.WALLET_LOCATION || ""))
+    // );
+    // const portDataArweave = await arweave.registerPort(
+    //     'AR:QA7AIFVx1KBBmzC7WUNhJbDsHlSJArUT0jWrhZMZPS8:ss8ZdRMP5ViZ5GKzIu3uIyrYFL-skEWKXoV7ve3OjEQ',
+    //     publicKey,
+    //     secretKey
+    // );
+
+    // Arweave Recipient Signing
+    // ----------------------------
+
+    const wallet = jsonfile.readFileSync('ar-wallet.json');
+    const recipientDataArweave = await arweave.registerRecipient(wallet, {
+        contentRegistryId: 'AR:QA7AIFVx1KBBmzC7WUNhJbDsHlSJArUT0jWrhZMZPS8:ss8ZdRMP5ViZ5GKzIu3uIyrYFL-skEWKXoV7ve3OjEQ',
+        k2PubKey: '4HV3retNdHCnNR4Q9KKdug2qQXTKvd8PJCehGJ6gTUKN',
+    })
+    console.log(inspect(recipientDataArweave, { showHidden: false, depth: null, colors: true }));
+    await sendRecipientsToNodes(recipientDataArweave)
 }
 
-async function main(params: SignInterface) {
-  const { image, privateKey, metadata } = params;
-  const wallet: SignKeyPair = sign.keyPair.fromSecretKey(privateKey);
-  const publicKey = bs58.encode(wallet.publicKey);
-
-  const upload = [
-    {
-      path: "metadata.json",
-      content: JSON.stringify(metadata),
-    },
-    {
-      path: "image.jpeg",
-      content: image,
-    },
-  ];
-  const result = new Array<IPFSResponseItem>();
-  for await (const response of client.addAll(upload, {
-    wrapWithDirectory: true,
-  })) {
-    console.log(response);
-    result.push(response);
-  }
-  const basePath: string =
-    result.find((e) => e.path == "")?.cid.toString() || "";
-  const cid: string =
-    result.find((e) => e.path == "image.jpeg")?.cid?.toString() || "";
-
-  result.filter;
-  const payload: PayloadInterface = {
-    contentRegistryId: `IPFS:${basePath}:${cid}`,
-    k2PubKey: publicKey,
-  };
-  const signature: Uint8Array = sign.detached(
-    encodeJSONToUint8Array(payload),
-    wallet.secretKey
-  );
-  const recipient = {
-    signedMessage: JSON.stringify({
-      data: {
-        payload,
-        timestamp: new Date().valueOf(),
-      },
-      signature: bs58.encode(signature),
-    }),
-    publicKey: bs58.encode(wallet.publicKey),
-    scheme: "IPFS",
-  };
-  return recipient;
+async function sendRecipientsToNodes(recipientsData: any) {
+    let rawResponse = await fetch('http://localhost:8887/attention/submit-recipients', {
+        method: 'POST',
+        body: JSON.stringify(recipientsData),
+        headers: { 'content-type': 'application/json' },
+    });
+    let res = await rawResponse.json();
+    console.log(res);
 }
-function encodeJSONToUint8Array(
-  data: Record<string, unknown> | PayloadInterface
-): Uint8Array {
-  return new TextEncoder().encode(JSON.stringify(data));
-}
-//test
-main({
-  privateKey: new Uint8Array([
-    16, 179, 201, 59, 157, 142, 252, 32, 11, 119, 232, 101, 245, 5, 225, 239,
-    198, 225, 229, 71, 137, 216, 16, 218, 189, 7, 85, 152, 61, 139, 4, 13, 254,
-    57, 244, 142, 109, 82, 53, 187, 235, 187, 57, 34, 227, 112, 112, 124, 134,
-    154, 131, 29, 35, 170, 42, 87, 50, 12, 252, 56, 98, 253, 36, 168,
-  ]),
-  image: fs.readFileSync(path.join(__dirname, "../image.jpeg")),
-  metadata: {
-    "owner": "J7Pp3r627N9XMG6GnX3TqqJRquzjCeB15vBf4SarC8RM",
-    "title": "Vin Avatar",
-    "name": "Vinciis",
-    "description": "Vin demo avatar for test",
-    "ticker": "KOINFT",
-    "balances": {
-      "J7Pp3r627N9XMG6GnX3TqqJRquzjCeB15vBf4SarC8RM": 1
-    },
-    "contentType": "image/png",
-    "createdAt": "1654017641",
-    "tags": [
-      "vinciis",
-      " blinds",
-      " arweave",
-      " koii"
-    ],
-    "isNsfw": false
-  }
-}).then((res) => {
-  console.log(inspect(res, { showHidden: false, depth: null, colors: true }));
-  fetch(
-    "http://localhost:8887/Attention22222222222222222222222222222222222/submit-recipients",
-    {
-      method: "POST",
-      body: JSON.stringify(res),
-      headers: {'content-type': 'application/json'},
-    }
-  )
-    .then((res) => res.json())
-    .then((res) => console.log(res));
-});
 
-interface PayloadInterface {
-  contentRegistryId: string;
-  k2PubKey: string;
-}
+main();

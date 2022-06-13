@@ -2,3 +2,5 @@ build/
 node_modules/
 .vscode/
 wallet.json
+test_wallet_keypair.json
+ar-wallet.json

@@ -4,10 +4,12 @@
   "main": "index.js",
   "scripts": {
     "build:dev": "tsc-watch --noClear -p ./tsconfig.json",
-    "run:dev": "node build/index.js"
+    "build": "tsc -p ./tsconfig.json",
+    "start": "node build/index.js"
   },
   "license": "MIT",
   "dependencies": {
+    "@_koi/web3.js": "^0.0.6",
     "@types/jsonfile": "^6.1.0",
     "@types/node-fetch": "^2.6.1",
     "arweave": "^1.10.23",
