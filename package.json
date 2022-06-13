@@ -9,6 +9,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@_koi/web3.js": "^0.0.6",
     "@types/jsonfile": "^6.1.0",
     "@types/node-fetch": "^2.6.1",
     "arweave": "^1.10.23",
