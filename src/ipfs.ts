@@ -78,4 +78,4 @@ function encodeJSONToUint8Array(
 }
 
 
-export {registerRecipient};
+export { registerRecipient };
