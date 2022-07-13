@@ -2,10 +2,11 @@ import dns from "dns";
 import { create, IPFSHTTPClient, CID } from "ipfs-http-client";
 import { SignKeyPair, sign } from "tweetnacl";
 import bs58 from "bs58";
+import { readFileSync } from "jsonfile";
 
 interface SignInterface {
   privateKey: Uint8Array;
-  image: Buffer | Uint8Array;
+  image?: Buffer | Uint8Array | string;
   metadata: MetaData;
 }
 interface IPFSResponseItem {
@@ -13,6 +14,7 @@ interface IPFSResponseItem {
   cid: CID;
   size: number;
 }
+
 interface MetaData {
   [x: string | number | symbol]: unknown;
 }
@@ -37,8 +39,11 @@ async function registerRecipient(params: SignInterface) {
     encodeJSONToUint8Array(payload),
     wallet.secretKey
   );
-  const  TxtRecords = await generateTxtRecords(signature, publicKey);
-  console.log(TxtRecords)
+  const TxtRecords = await generateTxtRecords(
+    bs58.encode(signature),
+    publicKey
+  );
+  console.log(TxtRecords);
   const recipient = {
     signedMessage: JSON.stringify({
       data: {
@@ -58,7 +63,21 @@ function encodeJSONToUint8Array(
   return new TextEncoder().encode(JSON.stringify(data));
 }
 
-async function generateTxtRecords(signature: Uint8Array, publicKey: string) {
+async function checkTXTrecords(urlStr: string) {
+  const url: URL = new URL(urlStr);
+  try{
+    const records:string[][]= await resolveTxtAsync(url.origin);
+  }
+}
+function resolveTxtAsync(url: string):Promise<string[][]> {
+  return new Promise((resolve, reject) => {
+    dns.resolveTxt("url", (error, addresses) => {
+      error ? reject(error) : resolve(addresses);
+    });
+  });
+}
+
+async function generateTxtRecords(signature: string, publicKey: string) {
   return [
     {
       "@": "signature-" + signature,
@@ -68,5 +87,20 @@ async function generateTxtRecords(signature: Uint8Array, publicKey: string) {
     },
   ];
 }
+function encodePublicKey(publicKey: Uint8Array): string {
+  return bs58.encode(
+    Buffer.from(publicKey.buffer, publicKey.byteOffset, publicKey.byteLength)
+  );
+}
 
 export { registerRecipient };
+
+const wallet = readFileSync("../wallet.json");
+const privateKey: Uint8Array = new Uint8Array(wallet);
+console.log(privateKey);
+registerRecipient({
+  privateKey,
+  metadata: {
+    url: "https://gogle.com",
+  },
+});
