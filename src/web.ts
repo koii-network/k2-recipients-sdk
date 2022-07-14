@@ -3,6 +3,7 @@ import { create, IPFSHTTPClient, CID } from "ipfs-http-client";
 import { SignKeyPair, sign } from "tweetnacl";
 import bs58 from "bs58";
 import { readFileSync } from "jsonfile";
+import prompt from "prompt";
 
 interface SignInterface {
   privateKey: Uint8Array;
@@ -31,7 +32,7 @@ async function registerRecipient(params: SignInterface) {
   const publicKey = bs58.encode(wallet.publicKey);
 
   const payload: PayloadInterface = {
-    contentRegistryId: metadata.url as string,
+    contentRegistryId: new URL(metadata.url as string).hostname,
     k2PubKey: publicKey,
   };
 
@@ -43,7 +44,19 @@ async function registerRecipient(params: SignInterface) {
     bs58.encode(signature),
     publicKey
   );
+  console.log("Please update the following TXT records");
   console.log(TxtRecords);
+  prompt.start()
+  const { updated } = await prompt.get({
+    properties: {
+      updated: {
+        message: "Press y|Y if you have updated the DNS records.",
+        required: true,
+        pattern:/^(?:Yes|No|y|n)$/gi
+      },
+    },
+  });
+
   const recipient = {
     signedMessage: JSON.stringify({
       data: {
@@ -53,7 +66,7 @@ async function registerRecipient(params: SignInterface) {
       signature: bs58.encode(signature),
     }),
     publicKey: bs58.encode(wallet.publicKey),
-    scheme: "IPFS",
+    scheme: "WEB2.0",
   };
   return recipient;
 }
@@ -65,11 +78,13 @@ function encodeJSONToUint8Array(
 
 async function checkTXTrecords(urlStr: string) {
   const url: URL = new URL(urlStr);
-  try{
-    const records:string[][]= await resolveTxtAsync(url.origin);
+  try {
+    const records: string[][] = await resolveTxtAsync(url.origin);
+  } catch (e) {
+    console.log(e);
   }
 }
-function resolveTxtAsync(url: string):Promise<string[][]> {
+function resolveTxtAsync(url: string): Promise<string[][]> {
   return new Promise((resolve, reject) => {
     dns.resolveTxt("url", (error, addresses) => {
       error ? reject(error) : resolve(addresses);
@@ -101,6 +116,6 @@ console.log(privateKey);
 registerRecipient({
   privateKey,
   metadata: {
-    url: "https://gogle.com",
+    url: "https://gogle.com/hello",
   },
 });
