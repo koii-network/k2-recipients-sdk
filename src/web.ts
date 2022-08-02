@@ -19,7 +19,7 @@ interface PayloadInterface {
   k2PubKey: string;
 }
 
-const client: IPFSHTTPClient = create();
+
 
 async function registerRecipient(params: SignInterface) {
   const { image, privateKey, metadata } = params;
@@ -53,7 +53,7 @@ async function registerRecipient(params: SignInterface) {
     },
   });
   if ((updated as string ).startsWith("y") || (updated as string).startsWith("Y")) {
-    let txtVerify:string[]= await getTXTrecords(metadata.url as string);
+    const txtVerify:string[]= await getTXTrecords(metadata.url as string);
     let signature: string,publicKey:string;
     txtVerify.forEach(e=>{
       if (e.startsWith("signature-")){
@@ -61,7 +61,31 @@ async function registerRecipient(params: SignInterface) {
       } else if(e.startsWith("publicKey-")){
         publicKey=e.substring(10);
       }
-    })
+    });
+    try {
+      //opening and verifying signature
+      let payload = nacl.sign.open(
+        decodePublicKey(signedMessage),
+        decodePublicKey(publicKey),
+      );
+      if (!payload) return { error: 'Something Went Wrong' };
+      //decoding Unit8Array to string
+      const decodedPayload = new TextDecoder().decode(payload);
+      //verifying hash
+      const hash = crypto
+        .createHash('sha256')
+        .update(signedMessage)
+        .digest('hex');
+      if (!hash.startsWith('00')) {
+        return { error: 'Something Went Wrong' };
+      }
+      return { data: decodedPayload };
+    } catch (e) {
+      console.error(e);
+      return { error: 'Something Went Wrong' };
+    }
+    
+
 
   }
 
