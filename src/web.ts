@@ -10,11 +10,6 @@ interface SignInterface {
   image?: Buffer | Uint8Array | string;
   metadata: MetaData;
 }
-interface IPFSResponseItem {
-  path: string;
-  cid: CID;
-  size: number;
-}
 
 interface MetaData {
   [x: string | number | symbol]: unknown;
@@ -32,7 +27,7 @@ async function registerRecipient(params: SignInterface) {
   const publicKey = bs58.encode(wallet.publicKey);
 
   const payload: PayloadInterface = {
-    contentRegistryId: new URL(metadata.url as string).hostname,
+    contentRegistryId: `WEB2:${new URL(metadata.url as string).hostname}`,
     k2PubKey: publicKey,
   };
 
@@ -50,12 +45,25 @@ async function registerRecipient(params: SignInterface) {
   const { updated } = await prompt.get({
     properties: {
       updated: {
+        name:"Updated?" ,
         message: "Press y|Y if you have updated the DNS records.",
         required: true,
         pattern:/^(?:Yes|No|y|n)$/gi
       },
     },
   });
+  if ((updated as string ).startsWith("y") || (updated as string).startsWith("Y")) {
+    let txtVerify:string[]= await getTXTrecords(metadata.url as string);
+    let signature: string,publicKey:string;
+    txtVerify.forEach(e=>{
+      if (e.startsWith("signature-")){
+        signature=e.substring(10);
+      } else if(e.startsWith("publicKey-")){
+        publicKey=e.substring(10);
+      }
+    })
+
+  }
 
   const recipient = {
     signedMessage: JSON.stringify({
@@ -76,17 +84,21 @@ function encodeJSONToUint8Array(
   return new TextEncoder().encode(JSON.stringify(data));
 }
 
-async function checkTXTrecords(urlStr: string) {
+async function getTXTrecords(urlStr: string):Promise<string[]>{
   const url: URL = new URL(urlStr);
   try {
+
     const records: string[][] = await resolveTxtAsync(url.origin);
+    return records.flat();
+
   } catch (e) {
     console.log(e);
+    return [];
   }
 }
 function resolveTxtAsync(url: string): Promise<string[][]> {
   return new Promise((resolve, reject) => {
-    dns.resolveTxt("url", (error, addresses) => {
+    dns.resolveTxt(url, (error, addresses) => {
       error ? reject(error) : resolve(addresses);
     });
   });
