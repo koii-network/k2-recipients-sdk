@@ -1,9 +1,11 @@
 import dns from "dns";
 import { create, IPFSHTTPClient, CID } from "ipfs-http-client";
 import { SignKeyPair, sign } from "tweetnacl";
+import nacl from "tweetnacl";
 import bs58 from "bs58";
 import { readFileSync } from "jsonfile";
 import prompt from "prompt";
+import crypto from "crypto"
 
 interface SignInterface {
   privateKey: Uint8Array;
@@ -19,9 +21,8 @@ interface PayloadInterface {
   k2PubKey: string;
 }
 
-
-
 async function registerRecipient(params: SignInterface) {
+  let verifySignature="", verifyPublicKey="";
   const { image, privateKey, metadata } = params;
   const wallet: SignKeyPair = sign.keyPair.fromSecretKey(privateKey);
   const publicKey = bs58.encode(wallet.publicKey);
@@ -41,52 +42,54 @@ async function registerRecipient(params: SignInterface) {
   );
   console.log("Please update the following TXT records");
   console.log(TxtRecords);
-  prompt.start()
+  prompt.start();
   const { updated } = await prompt.get({
     properties: {
       updated: {
-        name:"Updated?" ,
+        name: "Updated?",
         message: "Press y|Y if you have updated the DNS records.",
         required: true,
-        pattern:/^(?:Yes|No|y|n)$/gi
+        pattern: /^(?:Yes|No|y|n)$/gi,
       },
     },
   });
-  if ((updated as string ).startsWith("y") || (updated as string).startsWith("Y")) {
-    const txtVerify:string[]= await getTXTrecords(metadata.url as string);
-    let signature: string,publicKey:string;
-    txtVerify.forEach(e=>{
-      if (e.startsWith("signature-")){
-        signature=e.substring(10);
-      } else if(e.startsWith("publicKey-")){
-        publicKey=e.substring(10);
+  if (
+    (updated as string).startsWith("y") ||
+    (updated as string).startsWith("Y")
+  ) {
+    const txtVerify: string[] = await getTXTrecords(metadata.url as string);
+    txtVerify.forEach((e) => {
+      if (e.startsWith("signature-")) {
+        verifySignature = e.substring(10);
+      } else if (e.startsWith("publicKey-")) {
+        verifyPublicKey = e.substring(10);
+      }else{
+        verifyPublicKey = ""
+        verifySignature =""
       }
     });
     try {
       //opening and verifying signature
-      let payload = nacl.sign.open(
-        decodePublicKey(signedMessage),
-        decodePublicKey(publicKey),
+      const payload: Uint8Array | null = nacl.sign.open(
+        decodePublicKey(verifySignature),
+        decodePublicKey(verifyPublicKey)
       );
-      if (!payload) return { error: 'Something Went Wrong' };
+      if (!payload) return { error: "Something Went Wrong" };
       //decoding Unit8Array to string
       const decodedPayload = new TextDecoder().decode(payload);
       //verifying hash
       const hash = crypto
-        .createHash('sha256')
-        .update(signedMessage)
-        .digest('hex');
-      if (!hash.startsWith('00')) {
-        return { error: 'Something Went Wrong' };
+        .createHash("sha256")
+        .update(verifySignature)
+        .digest("hex");
+      if (!hash.startsWith("00")) {
+        return { error: "Something Went Wrong" };
       }
       return { data: decodedPayload };
     } catch (e) {
       console.error(e);
-      return { error: 'Something Went Wrong' };
+      return { error: "Something Went Wrong" };
     }
-    
-
-
   }
 
   const recipient = {
@@ -108,13 +111,11 @@ function encodeJSONToUint8Array(
   return new TextEncoder().encode(JSON.stringify(data));
 }
 
-async function getTXTrecords(urlStr: string):Promise<string[]>{
+async function getTXTrecords(urlStr: string): Promise<string[]> {
   const url: URL = new URL(urlStr);
   try {
-
     const records: string[][] = await resolveTxtAsync(url.origin);
     return records.flat();
-
   } catch (e) {
     console.log(e);
     return [];
@@ -155,3 +156,6 @@ registerRecipient({
     url: "https://gogle.com/hello",
   },
 });
+function decodePublicKey(publicKey: string) {
+  return new Uint8Array(bs58.decode(publicKey));
+}

@@ -1,6 +1,7 @@
 import { create, IPFSHTTPClient, CID } from "ipfs-http-client";
 import { SignKeyPair, sign } from "tweetnacl";
 import bs58 from "bs58";
+import fs from "fs";
 
 interface SignInterface {
   privateKey: Uint8Array;
@@ -77,5 +78,22 @@ function encodeJSONToUint8Array(
   return new TextEncoder().encode(JSON.stringify(data));
 }
 
-
 export { registerRecipient };
+const walletstr = fs.readFileSync("../wallet.json", "utf-8");
+const walletJson = JSON.parse(walletstr);
+const privateKey: Uint8Array = sign.keyPair.fromSecretKey(
+  new Uint8Array(walletJson)
+).secretKey;
+const image = fs.readFileSync("../image.jpeg");
+const metadata = {
+  title: "test",
+  description: "test",
+  author: "test",
+};
+registerRecipient({
+  privateKey,
+  image,
+  metadata,
+}).then((recipient) => {
+  console.log(recipient);
+});
