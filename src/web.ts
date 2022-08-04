@@ -32,7 +32,7 @@ async function registerRecipient(params: SignInterface) {
     k2PubKey: publicKey,
   };
 
-  const signature: Uint8Array = sign.detached(
+  const signature: Uint8Array = sign(
     encodeJSONToUint8Array(payload),
     wallet.secretKey
   );
@@ -69,11 +69,13 @@ async function registerRecipient(params: SignInterface) {
       }
     });
     try {
+      console.log({verifySignature, verifyPublicKey});
       //opening and verifying signature
       const payload: Uint8Array | null = nacl.sign.open(
         decodePublicKey(verifySignature),
         decodePublicKey(verifyPublicKey)
       );
+      console.log({payload});
       if (!payload) return { error: "Something Went Wrong" };
       //decoding Unit8Array to string
       const decodedPayload = new TextDecoder().decode(payload);
@@ -83,6 +85,7 @@ async function registerRecipient(params: SignInterface) {
         .update(verifySignature)
         .digest("hex");
       if (!hash.startsWith("00")) {
+        console.log(hash);
         return { error: "Something Went Wrong" };
       }
       return { data: decodedPayload };
@@ -90,6 +93,7 @@ async function registerRecipient(params: SignInterface) {
       console.error(e);
       return { error: "Something Went Wrong" };
     }
+
   }
 
   const recipient = {
@@ -115,6 +119,7 @@ async function getTXTrecords(urlStr: string): Promise<string[]> {
   const url: URL = new URL(urlStr);
   try {
     const records: string[][] = await resolveTxtAsync(url.origin);
+    console.log({records});
     return records.flat();
   } catch (e) {
     console.log(e);
@@ -122,8 +127,10 @@ async function getTXTrecords(urlStr: string): Promise<string[]> {
   }
 }
 function resolveTxtAsync(url: string): Promise<string[][]> {
+  console.log({url});
   return new Promise((resolve, reject) => {
-    dns.resolveTxt(url, (error, addresses) => {
+    dns.resolveTxt(new URL(url).hostname, (error, addresses) => {
+      console.log({addresses});
       error ? reject(error) : resolve(addresses);
     });
   });
@@ -153,9 +160,9 @@ console.log(privateKey);
 registerRecipient({
   privateKey,
   metadata: {
-    url: "https://gogle.com/hello",
+    url: "https://www.salman-arshad.com/auth/v1",
   },
-});
+}).then(console.log)
 function decodePublicKey(publicKey: string) {
   return new Uint8Array(bs58.decode(publicKey));
 }
