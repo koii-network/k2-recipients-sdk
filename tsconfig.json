@@ -10,7 +10,8 @@
       "moduleResolution": "node",
       "module": "commonJs",
       "outDir": "build",
-      "allowSyntheticDefaultImports": true
+      "allowSyntheticDefaultImports": true,
+      "noImplicitAny": false
 
     },
     "include": ["src/*", "test/test.js"],

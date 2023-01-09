@@ -12,38 +12,8 @@ export const arweave = Arweave.init({
     logging: false,
 });
 
-async function registerPort(resourceId: string, publicKey: Uint8Array, secretKey: Uint8Array) {
-    let connection = new Connection(process.env.K2_NODE_URL || 'http://localhost:8899', 'confirmed');
-    let epochInfo = await connection.getEpochInfo();
-    let nonce = 0;
-    let payload = {
-        resource: resourceId,
-        timestamp: new Date().valueOf(),
-        nonce,
-        scheme: 'AR',
-        epoch: epochInfo.epoch,
-    };
-    let signedMessage = null;
-    let data = {};
-    while (true) {
-        let msg = new TextEncoder().encode(JSON.stringify(payload));
-        payload.nonce++;
-        signedMessage = nacl.sign(msg, secretKey);
-        const hash = crypto.createHash('sha256').update(encodeDataBase58(signedMessage)).digest('hex');
-        if (difficultyFunction(hash)) {
-            console.log(hash);
-            break;
-        }
-        nonce++;
-    }
-    data = {
-        signedMessage: encodeDataBase58(signedMessage),
-        publicKey: encodeDataBase58(publicKey),
-    };
-    return data;
-}
 
-async function registerRecipient(wallet: any, payload: any) {
+async function registerArweaveNFT(wallet: any, payload: any) {
     let data: any = {};
     try {
         let signPayload = await proofOfWork(wallet, {
@@ -107,4 +77,4 @@ async function signPayload(payload: any, wallet: any): Promise<any> {
 function encodeDataBase58(data: any) {
     return bs58.encode(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
 }
-export { registerPort, registerRecipient };
+export {registerArweaveNFT as registerRecipient };

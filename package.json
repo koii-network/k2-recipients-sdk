@@ -5,7 +5,8 @@
   "scripts": {
     "build:dev": "tsc-watch --noClear -p ./tsconfig.json",
     "build": "tsc -p ./tsconfig.json",
-    "start": "node build/index.js"
+    "start": "node build/index.js",
+    "lint":"eslint "
   },
   "license": "MIT",
   "dependencies": {

@@ -1,12 +1,10 @@
 import dns from "dns";
-import { create, IPFSHTTPClient, CID } from "ipfs-http-client";
 import { SignKeyPair, sign } from "tweetnacl";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
 import { readFileSync } from "jsonfile";
 import prompt from "prompt";
-import crypto from "crypto"
-
+import fetch from "node-fetch"
 interface SignInterface {
   privateKey: Uint8Array;
   image?: Buffer | Uint8Array | string;
@@ -22,7 +20,8 @@ interface PayloadInterface {
 }
 
 async function registerRecipient(params: SignInterface) {
-  let verifySignature="", verifyPublicKey="";
+  let verifySignature = "",
+    verifyPublicKey = "";
   const { image, privateKey, metadata } = params;
   const wallet: SignKeyPair = sign.keyPair.fromSecretKey(privateKey);
   const publicKey = bs58.encode(wallet.publicKey);
@@ -36,6 +35,7 @@ async function registerRecipient(params: SignInterface) {
     encodeJSONToUint8Array(payload),
     wallet.secretKey
   );
+  const  signedMessage = bs58.encode(signature),;
   const TxtRecords = await generateTxtRecords(
     bs58.encode(signature),
     publicKey
@@ -63,37 +63,36 @@ async function registerRecipient(params: SignInterface) {
         verifySignature = e.substring(10);
       } else if (e.startsWith("publicKey-")) {
         verifyPublicKey = e.substring(10);
-      }else{
-        verifyPublicKey = ""
-        verifySignature =""
+      } else {
+        verifyPublicKey = "";
+        verifySignature = "";
       }
     });
     try {
-      console.log({verifySignature, verifyPublicKey});
+      console.log({ verifySignature, verifyPublicKey });
       //opening and verifying signature
-      const payload: Uint8Array | null = nacl.sign.open(
+      const verifiedPayload: Uint8Array | null = nacl.sign.open(
         decodePublicKey(verifySignature),
         decodePublicKey(verifyPublicKey)
       );
-      console.log({payload});
-      if (!payload) return { error: "Something Went Wrong" };
+      console.log({ payload: verifiedPayload });
+      if (!verifiedPayload) return { error: "Something Went Wrong" };
       //decoding Unit8Array to string
-      const decodedPayload = new TextDecoder().decode(payload);
+      const decodedPayload = new TextDecoder().decode(verifiedPayload);
       //verifying hash
-      const hash = crypto
-        .createHash("sha256")
-        .update(verifySignature)
-        .digest("hex");
-      if (!hash.startsWith("00")) {
-        console.log(hash);
-        return { error: "Something Went Wrong" };
-      }
-      return { data: decodedPayload };
+      // const hash = crypto
+      //   .createHash("sha256")
+      //   .update(verifySignature)
+      //   .digest("hex");
+      // if (!hash.startsWith("00")) {
+      //   console.log(hash);
+      //   return { error: "Something Went Wrong" };
+      // }
+      return { signedMessage,publicKey,scheme:"WEB2" };
     } catch (e) {
       console.error(e);
       return { error: "Something Went Wrong" };
     }
-
   }
 
   const recipient = {
@@ -119,7 +118,7 @@ async function getTXTrecords(urlStr: string): Promise<string[]> {
   const url: URL = new URL(urlStr);
   try {
     const records: string[][] = await resolveTxtAsync(url.origin);
-    console.log({records});
+    console.log({ records });
     return records.flat();
   } catch (e) {
     console.log(e);
@@ -127,10 +126,10 @@ async function getTXTrecords(urlStr: string): Promise<string[]> {
   }
 }
 function resolveTxtAsync(url: string): Promise<string[][]> {
-  console.log({url});
+  console.log({ url });
   return new Promise((resolve, reject) => {
     dns.resolveTxt(new URL(url).hostname, (error, addresses) => {
-      console.log({addresses});
+      console.log({ addresses });
       error ? reject(error) : resolve(addresses);
     });
   });
@@ -152,7 +151,7 @@ function encodePublicKey(publicKey: Uint8Array): string {
   );
 }
 
-export { registerRecipient };
+export { registerRecipient as RegisterWEBNFT };
 
 const wallet = readFileSync("../wallet.json");
 const privateKey: Uint8Array = new Uint8Array(wallet);
@@ -162,7 +161,19 @@ registerRecipient({
   metadata: {
     url: "https://www.salman-arshad.com/auth/v1",
   },
-}).then(console.log)
+}).then((res) => {
+  console.log(res);
+  fetch("http://localhost:8887/attention/submit-recipients", {
+    method: "POST",
+    body: JSON.stringify(res),
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  })
+    .then((res) => res.json())
+    .then(console.log);
+});
 function decodePublicKey(publicKey: string) {
   return new Uint8Array(bs58.decode(publicKey));
 }
