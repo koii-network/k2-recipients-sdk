@@ -35,7 +35,7 @@ async function registerRecipient(params: SignInterface) {
     encodeJSONToUint8Array(payload),
     wallet.secretKey
   );
-  const  signedMessage = bs58.encode(signature),;
+  const  signedMessage = bs58.encode(signature);
   const TxtRecords = await generateTxtRecords(
     bs58.encode(signature),
     publicKey
@@ -88,6 +88,7 @@ async function registerRecipient(params: SignInterface) {
       //   console.log(hash);
       //   return { error: "Something Went Wrong" };
       // }
+      
       return { signedMessage,publicKey,scheme:"WEB2" };
     } catch (e) {
       console.error(e);

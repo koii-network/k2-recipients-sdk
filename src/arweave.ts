@@ -4,7 +4,7 @@ import { Connection } from '@_koi/web3.js';
 import nacl from 'tweetnacl';
 import * as arweaveUtils from 'arweave/node/lib/utils';
 import Arweave from 'arweave';
-export const arweave = Arweave.init({
+const arweave = Arweave.init({
     host: 'arweave.net',
     protocol: 'https',
     port: 443,
@@ -77,4 +77,6 @@ async function signPayload(payload: any, wallet: any): Promise<any> {
 function encodeDataBase58(data: any) {
     return bs58.encode(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
 }
-export {registerArweaveNFT as registerRecipient };
+export {registerArweaveNFT };
+
+
