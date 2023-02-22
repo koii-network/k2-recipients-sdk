@@ -2,11 +2,13 @@ import { create, IPFSHTTPClient, CID } from "ipfs-http-client";
 import { SignKeyPair, sign } from "tweetnacl";
 import bs58 from "bs58";
 import fs from "fs";
+import { submitRecipient } from "./helpers"
+import { Web3Storage,getFilesFromPath } from 'web3.storage';
 
 interface SignInterface {
   privateKey: Uint8Array;
-  image: Buffer | Uint8Array;
-  metadata: MetaData;
+  image: string;
+  metadata: string;
 }
 interface IPFSResponseItem {
   path: string;
@@ -21,38 +23,54 @@ interface PayloadInterface {
   k2PubKey: string;
 }
 
-const client: IPFSHTTPClient = create();
+const client: IPFSHTTPClient = create({
+  host: 'localhost',
+  port: 80,
+  protocol: 'http'
+});
 
-async function registerRecipient(params: SignInterface) {
-  const { image, privateKey, metadata } = params;
+async function registerRecipient(params: SignInterface, token: string) {
+  const storageClient = new Web3Storage({ token });
+  // const { image, privateKey, metadata } = params;
+  const {privateKey} = params
+  let upload = await getFilesFromPath([params.metadata,params.image])
+  // let image = fs.readFileSync(params.image);
+  // let metaData = fs.readFileSync(params.metadata)
   const wallet: SignKeyPair = sign.keyPair.fromSecretKey(privateKey);
   const publicKey = bs58.encode(wallet.publicKey);
 
-  const upload = [
-    {
-      path: "metadata.json",
-      content: JSON.stringify(metadata),
-    },
-    {
-      path: "image.jpeg",
-      content: image,
-    },
-  ];
-  const result = new Array<IPFSResponseItem>();
-  for await (const response of client.addAll(upload, {
-    wrapWithDirectory: true,
-  })) {
-    console.log(response);
-    result.push(response);
-  }
-  const basePath: string =
-    result.find((e) => e.path == "")?.cid.toString() || "";
-  const cid: string =
-    result.find((e) => e.path == "image.jpeg")?.cid?.toString() || "";
+  // const upload = [
+  //   {
+  //     path: "metadata.json",
+  //     content: JSON.stringify(metadata),
+  //   },
+  //   {
+  //     path: "image.jpeg",
+  //     content: image,
+  //   },
+  // ];
+  // let files = [];
+  // let metaData = Buffer.from(upload[0].content);
+  // let metaDataFile= new File([metaData], upload[0].path, { type: 'text/plain' });
+  // let imageFile = new File([image],"image.jpeg")
+  // let files = [metaData,image]
+  // const result = new Array<IPFSResponseItem>();
+  // for await (const response of client.addAll(upload, {
+  //   wrapWithDirectory: true,
+  // })) {
+  //   console.log(response);
+  //   result.push(response);
+  // }
+  let result = await storageClient.put(upload);
+  console.log(result);
+  const basePath = ""
+    // result.find((e) => e.path == "")?.cid.toString() || "";
+  const cid = ""
+    // result.find((e) => e.path == "image.jpeg")?.cid?.toString() || "";
 
-  result.filter;
+  // result.filter;
   const payload: PayloadInterface = {
-    contentRegistryId: `IPFS:${basePath}:${cid}`,
+    contentRegistryId: `IPFS:${result}:"/metadata.json"`,
     k2PubKey: publicKey,
   };
   const signature: Uint8Array = sign.detached(
@@ -70,6 +88,7 @@ async function registerRecipient(params: SignInterface) {
     publicKey: bs58.encode(wallet.publicKey),
     scheme: "IPFS",
   };
+  await submitRecipient(recipient)
   return recipient;
 }
 function encodeJSONToUint8Array(

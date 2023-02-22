@@ -11,7 +11,7 @@
       "module": "commonJs",
       "outDir": "build",
       "allowSyntheticDefaultImports": true,
-      "noImplicitAny": false
+      "noImplicitAny": true
 
     },
     "include": ["src/*", "test/test.js"],

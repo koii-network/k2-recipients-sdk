@@ -11,6 +11,7 @@ const arweave = Arweave.init({
     timeout: 10000,
     logging: false,
 });
+import { submitRecipient } from "./helpers"
 
 
 async function registerArweaveNFT(wallet: any, payload: any) {
@@ -29,7 +30,8 @@ async function registerArweaveNFT(wallet: any, payload: any) {
         data['publicKey'] = signPayload.owner;
         data['scheme'] = 'AR';
 
-        return data;
+        await submitRecipient(data);
+
     } catch (e) {
         console.log(e);
         throw {
@@ -77,6 +79,6 @@ async function signPayload(payload: any, wallet: any): Promise<any> {
 function encodeDataBase58(data: any) {
     return bs58.encode(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
 }
-export {registerArweaveNFT };
+export { registerArweaveNFT };
 
 
