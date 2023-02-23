@@ -1,6 +1,6 @@
 {
   "name": "@_koii/k2-recipient-sdk",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "index.js",
   "scripts": {
     "build:dev": "tsc-watch --noClear -p ./tsconfig.json",

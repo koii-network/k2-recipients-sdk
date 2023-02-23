@@ -23,11 +23,6 @@ interface PayloadInterface {
   k2PubKey: string;
 }
 
-const client: IPFSHTTPClient = create({
-  host: 'localhost',
-  port: 80,
-  protocol: 'http'
-});
 
 async function registerRecipient(params: SignInterface, token: string) {
   const storageClient = new Web3Storage({ token });

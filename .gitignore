@@ -4,3 +4,4 @@ node_modules/
 wallet.json
 test_wallet_keypair.json
 ar-wallet.json
+test.js

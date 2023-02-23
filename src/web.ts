@@ -154,27 +154,7 @@ function encodePublicKey(publicKey: Uint8Array): string {
 
 export { registerRecipient as RegisterWEBNFT };
 
-const wallet = readFileSync("../wallet.json");
-const privateKey: Uint8Array = new Uint8Array(wallet);
-console.log(privateKey);
-registerRecipient({
-  privateKey,
-  metadata: {
-    url: "https://www.salman-arshad.com/auth/v1",
-  },
-}).then((res) => {
-  console.log(res);
-  fetch("http://localhost:8887/attention/submit-recipients", {
-    method: "POST",
-    body: JSON.stringify(res),
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-  })
-    .then((res) => res.json())
-    .then(console.log);
-});
+
 function decodePublicKey(publicKey: string) {
   return new Uint8Array(bs58.decode(publicKey));
 }
