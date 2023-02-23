@@ -13,7 +13,7 @@ let nodes: string | any[] = []
 let trustedNodeAddress = "http://localhost:8080"
 function getListOfAllNodes(): Promise<void> {
   return new Promise((resolve, reject) => {
-    fetch(trustedNodeAddress + "/nodes")
+    fetch(trustedNodeAddress + "/nodes/Attention22222222222222222222222222222222222")
       .then((res) => res.json())
       .then(async (res) => {
         const validNodes = await getNodesRunningAttentionGame(res);
