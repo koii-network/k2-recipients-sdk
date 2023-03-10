@@ -26,18 +26,18 @@ async function main() {
   };
   //  IPFS recipient Signing
   //-----------------------------
-  // let recipientsDataIPFS = await ipfs.registerRecipient({
-  //     privateKey: new Uint8Array([
-  //         16, 179, 201, 59, 157, 142, 252, 32, 11, 119, 232, 101, 245, 5, 225, 239,
-  //         198, 225, 229, 71, 137, 216, 16, 218, 189, 7, 85, 152, 61, 139, 4, 13, 254,
-  //         57, 244, 142, 109, 82, 53, 187, 235, 187, 57, 34, 227, 112, 112, 124, 134,
-  //         154, 131, 29, 35, 170, 42, 87, 50, 12, 252, 56, 98, 253, 36, 168,
-  //     ]),
-  //     image: fs.readFileSync(path.join(__dirname, "../image.jpeg")),
-  //     metadata: metadata
-  // })
-  // console.log(inspect(recipientsDataIPFS, { showHidden: false, depth: null, colors: true }));
-  // await sendRecipientsToNodes(recipientsDataIPFS)
+  let recipientsDataIPFS = await ipfs.registerIpfsNFT({
+      privateKey: new Uint8Array([
+          16, 179, 201, 59, 157, 142, 252, 32, 11, 119, 232, 101, 245, 5, 225, 239,
+          198, 225, 229, 71, 137, 216, 16, 218, 189, 7, 85, 152, 61, 139, 4, 13, 254,
+          57, 244, 142, 109, 82, 53, 187, 235, 187, 57, 34, 227, 112, 112, 124, 134,
+          154, 131, 29, 35, 170, 42, 87, 50, 12, 252, 56, 98, 253, 36, 168,
+      ]),
+      image: "image.jpeg",
+      metadata: "metadata.json",
+  }, process.env.WEB3_STORAGE_KEY||"")
+  console.log(inspect(recipientsDataIPFS, { showHidden: false, depth: null, colors: true }));
+  await sendRecipientsToNodes(recipientsDataIPFS)
 
   //  Arweave Ports Signing
   //-----------------------------

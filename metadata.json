@@ -1,0 +1,14 @@
+{
+  "owner": "J7Pp3r627N9XMG6GnX3TqqJRquzjCeB15vBf4SarC8RM",
+  "title": "Vin Avatar",
+  "name": "Vinciis",
+  "description": "Vin demo avatar for test",
+  "ticker": "KOINFT",
+  "balances": {
+    "J7Pp3r627N9XMG6GnX3TqqJRquzjCeB15vBf4SarC8RM": 1
+  },
+  "contentType": "image/png",
+  "createdAt": "1654017641",
+  "tags": ["vinciis", " blinds", " arweave", " koii"],
+  "isNsfw": false
+}
